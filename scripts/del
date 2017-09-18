@@ -1,0 +1,19 @@
+#!/bin/bash
+
+#====================================
+# This script is used to delete a site
+#==================================== 
+while :; do echo
+    read -p "Please input domain(example: example.com, DO NOT enter www): " domain
+    if [ -z "$(echo ${domain} | grep '.*\..*')" ]; then
+      echo "input error!"
+    else
+        if [ -d "/var/www/html/${domain}" ]; then
+            rm -rf /var/www/html/${domain}
+            rm -rf /var/www/html/conf/${domain}.conf
+        else
+            echo "The site doesn't exsit!"
+            exit
+        fi
+    fi
+done

@@ -1,0 +1,58 @@
+#!/bin/bash
+
+#====================================
+# This script is used to add a site
+#==================================== 
+while :; do echo
+    read -p "Please input domain(example: example.com, DO NOT enter www): " domain
+    if [ -z "$(echo ${domain} | grep '.*\..*')" ]; then
+      echo "input error!"
+    else
+        if [ -d "/var/www/html/${domain}" ]; then
+            echo "Website Exists!"
+            exit
+        else
+            mkdir -p /var/www/html/${domain}
+            break
+        fi
+    fi
+done
+
+while :; do echo
+  read -p "Do you want to enable https? [y/n]: " httpsyn
+  if [[ ! $httpsyn =~ ^[y,n]$ ]]; then
+    echo "input error! Please only input 'y' or 'n'"
+  else
+    break
+  fi
+done
+
+if [ "${httpsyn}" == 'y' ]; then
+    cp /var/www/vhost-ssl.conf /var/www/html/conf/${domain}.conf
+    sed "s/DOMAINNAME/${domain}/g" /var/www/html/conf/${domain}.conf
+
+    while :; do echo
+        read -p "Do you want to use a Let's Encrypt certificate? [y/n]: " letsencrypt_yn
+        if [[ ! ${letsencrypt_yn} =~ ^[y,n]$ ]]; then
+            echo "input error! Please only input 'y' or 'n'"
+        else
+            break
+        fi
+    done
+
+    if [ "${letsencrypt_yn}" == 'y' ]; then
+        echo
+        read -p "Email Address: " Admin_Email
+        /usr/bin/certbot certonly --webroot --agree-tos --quiet --email ${Admin_Email} -w /var/www/html/${domain} -d ${domain} www.${domain}
+        if [ -s "/etc/letsencrypt/live/${domain}/cert.pem" ]; then
+            /usr/sbin/nginx -s reload
+        else
+            echo "Cert generating failed!"
+        fi
+    fi
+
+else
+    cp /var/www/vhost.conf /var/www/html/conf/${domain}.conf
+    sed "s/DOMAINNAME/${domain}/g" /var/www/html/conf/${domain}.conf
+    /usr/sbin/nginx -s reload
+fi
